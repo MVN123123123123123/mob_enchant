@@ -136,13 +136,11 @@ const NON_MOB_ENTITIES = new Set([
 // BONUS LOOT TABLE — Items that can drop from enchanted mobs on death
 // ============================================================================
 const BONUS_LOOT_TABLE = [
-    { item: "minecraft:emerald",        weight: 30 },
-    { item: "minecraft:iron_ingot",     weight: 25 },
-    { item: "minecraft:gold_ingot",     weight: 20 },
-    { item: "minecraft:lapis_lazuli",   weight: 20 },
-    { item: "minecraft:diamond",        weight: 10 },
-    { item: "minecraft:amethyst_shard", weight: 10 },
-    { item: "minecraft:netherite_scrap",weight: 2 },
+    { item: "minecraft:emerald",        weight: 400 },
+    { item: "minecraft:iron_ingot",     weight: 290 },
+    { item: "minecraft:gold_ingot",     weight: 290 },
+    { item: "minecraft:diamond",        weight: 19 },
+    { item: "minecraft:netherite_scrap",weight: 1 },
 ];
 
 // ============================================================================
@@ -567,12 +565,8 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
                 case "channeling": {
                     try {
                         const dim = attacker.dimension;
-                        // Check if weather is thunder
-                        // We use runCommand to spawn lightning since direct API may be limited
                         const loc = victim.location;
-                        dim.runCommand(
-                            `summon lightning_bolt ${Math.floor(loc.x)} ${Math.floor(loc.y)} ${Math.floor(loc.z)}`
-                        );
+                        dim.spawnEntity("minecraft:lightning_bolt", loc);
                     } catch {
                         // May fail if not thundering or command fails
                     }
@@ -707,46 +701,35 @@ world.afterEvents.entityDie.subscribe((event) => {
         }
 
         // --- BONUS LOOT ---
-        // Number of bonus item drops scales with enchant count and power
-        // 1 enchant, low power: 1 item
-        // 3 enchants, medium power: 2-3 items
-        // 5 enchants, max power: 4-6 items
-        const baseLootRolls = enchantCount;
-        const bonusRolls = Math.floor(powerScore / 5);
-        const totalLootRolls = Math.min(baseLootRolls + bonusRolls, 8);
+        // Scales with number of enchantments and sum of enchant levels (powerScore).
+        // Cap at 200 items.
+        let totalItemsToDrop = Math.floor(enchantCount * powerScore * 1.5);
+        if (totalItemsToDrop < 1) totalItemsToDrop = 1;
+        if (totalItemsToDrop > 200) totalItemsToDrop = 200;
 
-        for (let i = 0; i < totalLootRolls; i++) {
-            // Roll what item drops
+        // Group the drops into stacks to prevent massive lag
+        const drops = {};
+        for (let i = 0; i < totalItemsToDrop; i++) {
             const lootEntry = weightedRandom(BONUS_LOOT_TABLE);
+            if (!drops[lootEntry.item]) drops[lootEntry.item] = 0;
+            drops[lootEntry.item]++;
+        }
 
-            // Stack size scales slightly with power
-            // Low power: 1, Medium: 1-2, High: 1-3
-            let stackSize = 1;
-            if (powerScore >= 10) {
-                stackSize = Math.floor(Math.random() * 3) + 1;
-            } else if (powerScore >= 5) {
-                stackSize = Math.floor(Math.random() * 2) + 1;
-            }
-
-            // Netherite scrap is always 1
-            if (lootEntry.item === "minecraft:netherite_scrap") {
-                stackSize = 1;
-            }
-
-            // Drop the item at the death location with slight scatter
-            const ix = loc.x + (Math.random() - 0.5) * 0.8;
-            const iz = loc.z + (Math.random() - 0.5) * 0.8;
-            try {
-                // Spawn item natively using dimension.spawnItem
-                const itemStack = new ItemStack(lootEntry.item, stackSize);
-                dim.spawnItem(itemStack, { x: ix, y: loc.y + 0.5, z: iz });
-            } catch {
-                // Fallback: try give command to nearest player
+        for (const itemId in drops) {
+            let amount = drops[itemId];
+            while (amount > 0) {
+                const stackSize = Math.min(amount, 64);
+                amount -= stackSize;
+                
+                const ix = loc.x + (Math.random() - 0.5) * 0.8;
+                const iz = loc.z + (Math.random() - 0.5) * 0.8;
                 try {
-                    dim.runCommand(
-                        `give @p[r=24] ${lootEntry.item} ${stackSize}`
-                    );
-                } catch { /* ignore */ }
+                    const itemStack = new ItemStack(itemId, stackSize);
+                    dim.spawnItem(itemStack, { x: ix, y: loc.y + 0.5, z: iz });
+                } catch {
+                    // Fallback
+                    try { dim.runCommand(`give @p[r=24] ${itemId} ${stackSize}`); } catch {}
+                }
             }
         }
 
@@ -853,8 +836,12 @@ system.runInterval(() => {
 }, 40); // Every 40 ticks = 2 seconds
 
 // ============================================================================
-// STARTUP LOG
+// STARTUP MESSAGE
 // ============================================================================
-world.afterEvents.worldLoad.subscribe(() => {
-    world.sendMessage("§d§l[Mob Enchant]§r §aAddon loaded! Mobs now have a 1/6 chance to spawn enchanted.");
-});
+system.runTimeout(() => {
+    try {
+        world.sendMessage("§d§l[Mob Enchant]§r §aAddon loaded! Mobs now have a 1/6 chance to spawn enchanted.");
+    } catch {
+        // May fail if no players are online yet
+    }
+}, 100);
