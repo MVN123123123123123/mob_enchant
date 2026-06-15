@@ -3,3 +3,71 @@ tasks.register('build', Zip.class) {
     archiveFileName = 'export.mcaddon'
     destinationDirectory = file('build/export/')
 }
+
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+build.doLast {
+    def fixManifest = { File manifestFile ->
+        if (!manifestFile.exists()) {
+            println "Skipping non-existent manifest: ${manifestFile.absolutePath}"
+            return
+        }
+        println "Fixing manifest: ${manifestFile.absolutePath}"
+        try {
+            def json = new JsonSlurper().parse(manifestFile)
+            
+            // Ensure modules array exists
+            if (json.modules == null) {
+                json.modules = []
+            }
+            
+            // Ensure module type script is present
+            def hasScriptModule = json.modules.any { it.type == 'script' }
+            if (!hasScriptModule) {
+                json.modules << [
+                    description: "Mob enchantment script",
+                    type: "script",
+                    language: "javascript",
+                    uuid: "a3c1d7e2-4f89-4b6a-9e12-3d5f8a7c6b01",
+                    version: [1, 0, 0],
+                    entry: "scripts/main.js"
+                ]
+            }
+            
+            // Ensure dependencies array exists
+            if (json.dependencies == null) {
+                json.dependencies = []
+            }
+            
+            // Ensure @minecraft/server dependency is present
+            def hasServerDependency = json.dependencies.any { it.module_name == '@minecraft/server' }
+            if (!hasServerDependency) {
+                json.dependencies << [
+                    module_name: "@minecraft/server",
+                    version: "1.11.0"
+                ]
+            } else {
+                json.dependencies.each { dep ->
+                    if (dep.module_name == '@minecraft/server') {
+                        dep.version = "1.11.0"
+                    }
+                }
+            }
+            
+            manifestFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(json))
+            println "Successfully patched manifest: ${manifestFile.absolutePath}"
+        } catch (e) {
+            println "Failed to fix manifest ${manifestFile.absolutePath}: ${e.message}"
+        }
+    }
+
+    // Fix source manifest in behavior pack
+    fixManifest(file('src/main/mob_enchant_behaviourpack/manifest.json'))
+
+    // Fix installed manifest in Bedrock dev behavior packs
+    def homeDir = System.getProperty('user.home')
+    def installedManifest = new File(homeDir, "AppData/Roaming/Minecraft Bedrock/Users/Shared/games/com.mojang/development_behavior_packs/mob_enchant/manifest.json")
+    fixManifest(installedManifest)
+}
+

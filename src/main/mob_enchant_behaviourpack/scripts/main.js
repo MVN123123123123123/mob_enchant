@@ -6,7 +6,7 @@
 // Enchantments are stored as dynamic properties and applied via event listeners.
 // ============================================================================
 
-import { world, system, EntityDamageCause } from "@minecraft/server";
+import { world, system, EntityDamageCause, ItemStack } from "@minecraft/server";
 
 // ============================================================================
 // ENCHANTMENT POOL — All positive vanilla enchantments (no curses)
@@ -153,6 +153,29 @@ const ENCHANT_PROPERTY = "mob_enchant:enchantments";
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
+/**
+ * Check if an entity is still valid and loaded.
+ * Handles both method and property styles of `isValid` safely.
+ */
+function isEntityValid(entity) {
+    if (!entity) return false;
+    if (typeof entity.isValid === "function") {
+        try {
+            return entity.isValid();
+        } catch {
+            return false;
+        }
+    }
+    if (typeof entity.isValid === "boolean") {
+        return entity.isValid;
+    }
+    try {
+        return entity.typeId !== undefined;
+    } catch {
+        return false;
+    }
+}
 
 /**
  * Weighted random pick from an array of { ..., weight } objects.
@@ -316,7 +339,7 @@ function setEnchantedNameplate(entity, enchantList) {
 // Only players and non-mob entities (items, projectiles, vehicles, etc.) are excluded.
 function isMob(entity) {
     try {
-        if (!entity || !entity.isValid()) return false;
+        if (!isEntityValid(entity)) return false;
         // Exclude players
         if (entity.typeId === "minecraft:player") return false;
         // Exclude known non-mob entities (projectiles, items, vehicles, etc.)
@@ -430,8 +453,8 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
     const attacker = event.damagingEntity;
     const victim = event.hitEntity;
 
-    if (!attacker || !attacker.isValid()) return;
-    if (!victim || !victim.isValid()) return;
+    if (!isEntityValid(attacker)) return;
+    if (!isEntityValid(victim)) return;
 
     const enchants = getEnchantments(attacker);
     if (!enchants) return;
@@ -569,7 +592,7 @@ world.afterEvents.entityHurt.subscribe((event) => {
     const victim = event.hurtEntity;
     const attacker = event.damageSource?.damagingEntity;
 
-    if (!victim || !victim.isValid()) return;
+    if (!isEntityValid(victim)) return;
 
     const enchants = getEnchantments(victim);
     if (!enchants) return;
@@ -579,7 +602,7 @@ world.afterEvents.entityHurt.subscribe((event) => {
             switch (enchant.id) {
                 // --- THORNS: Reflect damage back to attacker ---
                 case "thorns": {
-                    if (!attacker || !attacker.isValid()) break;
+                    if (!isEntityValid(attacker)) break;
                     // Vanilla: level * 15% chance to deal 1-4 damage
                     const thornsChance = enchant.level * 0.15;
                     if (Math.random() < thornsChance) {
@@ -655,13 +678,13 @@ world.afterEvents.entityDie.subscribe((event) => {
         const loc = deadEntity.location;
         const dim = deadEntity.dimension;
 
-        // Spawn XP via /xp command to the killing player if it was a player kill
+        // Add XP directly to the killing player if it was a player kill
         const killer = damageSource?.damagingEntity;
         if (killer && killer.typeId === "minecraft:player") {
             try {
-                dim.runCommand(`xp ${bonusXP} "${killer.name}"`);
+                killer.addExperience(bonusXP);
             } catch {
-                // Fallback: spawn XP orbs at location via multiple small summons
+                // Fallback: spawn XP orbs at location via summon
                 const orbCount = Math.min(Math.ceil(bonusXP / 5), 10);
                 for (let i = 0; i < orbCount; i++) {
                     const ox = loc.x + (Math.random() - 0.5) * 1.0;
@@ -672,7 +695,7 @@ world.afterEvents.entityDie.subscribe((event) => {
                 }
             }
         } else {
-            // Non-player kill — still spawn XP orbs at the location
+            // Non-player kill — spawn XP orbs at the location
             const orbCount = Math.min(Math.ceil(bonusXP / 5), 10);
             for (let i = 0; i < orbCount; i++) {
                 const ox = loc.x + (Math.random() - 0.5) * 1.0;
@@ -714,12 +737,9 @@ world.afterEvents.entityDie.subscribe((event) => {
             const ix = loc.x + (Math.random() - 0.5) * 0.8;
             const iz = loc.z + (Math.random() - 0.5) * 0.8;
             try {
-                // Use /loot or /give won't work here, so we use structure-style command
-                // summon item entity with the loot
-                const itemName = lootEntry.item.replace("minecraft:", "");
-                dim.runCommand(
-                    `summon item ${ix.toFixed(1)} ${(loc.y + 0.5).toFixed(1)} ${iz.toFixed(1)} minecraft:${itemName} ${stackSize}`
-                );
+                // Spawn item natively using dimension.spawnItem
+                const itemStack = new ItemStack(lootEntry.item, stackSize);
+                dim.spawnItem(itemStack, { x: ix, y: loc.y + 0.5, z: iz });
             } catch {
                 // Fallback: try give command to nearest player
                 try {
@@ -765,7 +785,7 @@ system.runInterval(() => {
             try {
                 const entities = dimension.getEntities();
                 for (const entity of entities) {
-                    if (!entity.isValid()) continue;
+                    if (!isEntityValid(entity)) continue;
                     if (entity.typeId === "minecraft:player") continue;
 
                     const enchants = getEnchantments(entity);
@@ -797,7 +817,7 @@ system.runInterval(() => {
             try {
                 const entities = dimension.getEntities();
                 for (const entity of entities) {
-                    if (!entity.isValid()) continue;
+                    if (!isEntityValid(entity)) continue;
                     if (entity.typeId === "minecraft:player") continue;
 
                     const enchants = getEnchantments(entity);

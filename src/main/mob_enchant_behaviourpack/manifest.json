@@ -1,62 +1,62 @@
 {
-  "format_version": 2,
-  "header": {
-    "description": "Randomly enchants mobs on spawn with real gameplay effects",
-    "name": "mob enchant",
-    "uuid": "145bfb42-af53-36eb-b89b-fb8b4e842913",
-    "version": [
-      1,
-      0,
-      0
-    ],
-    "min_engine_version": [
-      1,
-      26,
-      10
-    ]
-  },
-  "modules": [
-    {
-      "description": "",
-      "type": "data",
-      "uuid": "faa02f12-dc79-3cfe-90f6-8dbee10aed6d",
-      "version": [
-        1,
-        0,
-        0
-      ]
+    "format_version": 2,
+    "header": {
+        "description": "",
+        "name": "mob enchant",
+        "uuid": "145bfb42-af53-36eb-b89b-fb8b4e842913",
+        "version": [
+            1,
+            0,
+            0
+        ],
+        "min_engine_version": [
+            1,
+            26,
+            10
+        ]
     },
-    {
-      "description": "Mob enchantment script",
-      "type": "script",
-      "language": "javascript",
-      "uuid": "a3c1d7e2-4f89-4b6a-9e12-3d5f8a7c6b01",
-      "version": [
-        1,
-        0,
-        0
-      ],
-      "entry": "scripts/main.js"
-    }
-  ],
-  "dependencies": [
-    {
-      "uuid": "b7777a09-0d5a-3d84-8506-396ba6a2c982",
-      "version": [
-        1,
-        0,
-        0
-      ]
-    },
-    {
-      "module_name": "@minecraft/server",
-      "version": "2.6.0"
-    }
-  ],
-  "metadata": {
-    "authors": [
-      "MCreator"
+    "modules": [
+        {
+            "description": "",
+            "type": "data",
+            "uuid": "faa02f12-dc79-3cfe-90f6-8dbee10aed6d",
+            "version": [
+                1,
+                0,
+                0
+            ]
+        },
+        {
+            "description": "Mob enchantment script",
+            "type": "script",
+            "language": "javascript",
+            "uuid": "a3c1d7e2-4f89-4b6a-9e12-3d5f8a7c6b01",
+            "version": [
+                1,
+                0,
+                0
+            ],
+            "entry": "scripts/main.js"
+        }
     ],
-    "url": "https://mcreator.net"
-  }
+    "dependencies": [
+        {
+            "uuid": "b7777a09-0d5a-3d84-8506-396ba6a2c982",
+            "version": [
+                1,
+                0,
+                0
+            ]
+        },
+        {
+            "module_name": "@minecraft/server",
+            "version": "1.11.0"
+        }
+    ],
+    "metadata": {
+        "authors": [
+            "MCreator"
+        ],
+        "url": "https://mcreator.net"
+    }
 }
