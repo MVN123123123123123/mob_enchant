@@ -1,0 +1,36 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "",
+    "name": "mob enchant",
+    "uuid": "b7777a09-0d5a-3d84-8506-396ba6a2c982",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      10
+    ]
+  },
+  "modules": [
+    {
+      "description": "",
+      "type": "resources",
+      "uuid": "1ecf1967-290a-3c72-b00d-5f647914e644",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "MCreator"
+    ],
+    "url": "https://mcreator.net"
+  }
+}
