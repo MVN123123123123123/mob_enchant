@@ -6,7 +6,7 @@
 // Enchantments are stored as dynamic properties and applied via event listeners.
 // ============================================================================
 
-import { world, system, EntityDamageCause, ItemStack } from "@minecraft/server";
+import { world, system, EntityDamageCause, ItemStack, BlockPermutation } from "@minecraft/server";
 
 // ============================================================================
 // ENCHANTMENT POOL — All positive vanilla enchantments (no curses)
@@ -15,53 +15,53 @@ import { world, system, EntityDamageCause, ItemStack } from "@minecraft/server";
 // category is used to decide which effects to implement
 const ENCHANTMENT_POOL = [
     // --- Defensive ---
-    { id: "protection",            maxLevel: 4, category: "defensive" },
+    { id: "protection", maxLevel: 4, category: "defensive" },
     { id: "projectile_protection", maxLevel: 4, category: "defensive" },
-    { id: "fire_protection",       maxLevel: 4, category: "defensive" },
-    { id: "blast_protection",      maxLevel: 4, category: "defensive" },
-    { id: "feather_falling",       maxLevel: 4, category: "defensive" },
-    { id: "thorns",                maxLevel: 3, category: "defensive" },
-    { id: "respiration",           maxLevel: 3, category: "passive" },
-    { id: "aqua_affinity",         maxLevel: 1, category: "flavor" },
+    { id: "fire_protection", maxLevel: 4, category: "defensive" },
+    { id: "blast_protection", maxLevel: 4, category: "defensive" },
+    { id: "feather_falling", maxLevel: 4, category: "defensive" },
+    { id: "thorns", maxLevel: 3, category: "defensive" },
+    { id: "respiration", maxLevel: 3, category: "passive" },
+    { id: "aqua_affinity", maxLevel: 1, category: "flavor" },
 
     // --- Movement ---
-    { id: "depth_strider",         maxLevel: 3, category: "passive" },
-    { id: "frost_walker",          maxLevel: 2, category: "passive" },
-    { id: "soul_speed",            maxLevel: 3, category: "passive" },
+    { id: "depth_strider", maxLevel: 3, category: "passive" },
+    { id: "frost_walker", maxLevel: 2, category: "passive" },
+    { id: "soul_speed", maxLevel: 3, category: "passive" },
 
     // --- Offensive ---
-    { id: "sharpness",             maxLevel: 5, category: "offensive" },
-    { id: "smite",                 maxLevel: 5, category: "offensive" },
-    { id: "bane_of_arthropods",    maxLevel: 5, category: "offensive" },
-    { id: "knockback",             maxLevel: 2, category: "offensive" },
-    { id: "fire_aspect",           maxLevel: 2, category: "offensive" },
-    { id: "looting",               maxLevel: 3, category: "flavor" },
+    { id: "sharpness", maxLevel: 5, category: "offensive" },
+    { id: "smite", maxLevel: 5, category: "offensive" },
+    { id: "bane_of_arthropods", maxLevel: 5, category: "offensive" },
+    { id: "knockback", maxLevel: 2, category: "offensive" },
+    { id: "fire_aspect", maxLevel: 2, category: "offensive" },
+    { id: "looting", maxLevel: 3, category: "flavor" },
 
     // --- Tool ---
-    { id: "efficiency",            maxLevel: 5, category: "flavor" },
-    { id: "fortune",               maxLevel: 3, category: "flavor" },
-    { id: "silk_touch",            maxLevel: 1, category: "flavor" },
-    { id: "unbreaking",            maxLevel: 3, category: "flavor" },
-    { id: "mending",               maxLevel: 1, category: "flavor" },
+    { id: "efficiency", maxLevel: 5, category: "flavor" },
+    { id: "fortune", maxLevel: 3, category: "flavor" },
+    { id: "silk_touch", maxLevel: 1, category: "flavor" },
+    { id: "unbreaking", maxLevel: 3, category: "flavor" },
+    { id: "mending", maxLevel: 1, category: "flavor" },
 
     // --- Ranged ---
-    { id: "power",                 maxLevel: 5, category: "offensive" },
-    { id: "punch",                 maxLevel: 2, category: "offensive" },
-    { id: "flame",                 maxLevel: 1, category: "offensive" },
-    { id: "infinity",              maxLevel: 1, category: "flavor" },
-    { id: "multishot",             maxLevel: 1, category: "flavor" },
-    { id: "piercing",              maxLevel: 4, category: "flavor" },
-    { id: "quick_charge",          maxLevel: 3, category: "flavor" },
+    { id: "power", maxLevel: 5, category: "offensive" },
+    { id: "punch", maxLevel: 2, category: "offensive" },
+    { id: "flame", maxLevel: 1, category: "offensive" },
+    { id: "infinity", maxLevel: 1, category: "flavor" },
+    { id: "multishot", maxLevel: 1, category: "flavor" },
+    { id: "piercing", maxLevel: 4, category: "flavor" },
+    { id: "quick_charge", maxLevel: 3, category: "flavor" },
 
     // --- Trident ---
-    { id: "impaling",              maxLevel: 5, category: "offensive" },
-    { id: "riptide",               maxLevel: 3, category: "flavor" },
-    { id: "loyalty",               maxLevel: 3, category: "flavor" },
-    { id: "channeling",            maxLevel: 1, category: "offensive" },
+    { id: "impaling", maxLevel: 5, category: "offensive" },
+    { id: "riptide", maxLevel: 3, category: "flavor" },
+    { id: "loyalty", maxLevel: 3, category: "flavor" },
+    { id: "channeling", maxLevel: 1, category: "offensive" },
 
     // --- Fishing ---
-    { id: "luck_of_the_sea",       maxLevel: 3, category: "flavor" },
-    { id: "lure",                  maxLevel: 3, category: "flavor" },
+    { id: "luck_of_the_sea", maxLevel: 3, category: "flavor" },
+    { id: "lure", maxLevel: 3, category: "flavor" },
 ];
 
 // ============================================================================
@@ -136,11 +136,11 @@ const NON_MOB_ENTITIES = new Set([
 // BONUS LOOT TABLE — Items that can drop from enchanted mobs on death
 // ============================================================================
 const BONUS_LOOT_TABLE = [
-    { item: "minecraft:emerald",        weight: 400 },
-    { item: "minecraft:iron_ingot",     weight: 290 },
-    { item: "minecraft:gold_ingot",     weight: 290 },
-    { item: "minecraft:diamond",        weight: 19 },
-    { item: "minecraft:netherite_scrap",weight: 1 },
+    { item: "minecraft:emerald", weight: 400 },
+    { item: "minecraft:iron_ingot", weight: 290 },
+    { item: "minecraft:gold_ingot", weight: 290 },
+    { item: "minecraft:diamond", weight: 19 },
+    { item: "minecraft:netherite_scrap", weight: 1 },
 ];
 
 // ============================================================================
@@ -151,6 +151,19 @@ const ENCHANT_PROPERTY = "mob_enchant:enchantments";
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
+
+/**
+ * Rotate a 3D vector around the Y axis by a given angle in radians.
+ */
+function rotateY(vector, angleRad) {
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    return {
+        x: vector.x * cos - vector.z * sin,
+        y: vector.y,
+        z: vector.x * sin + vector.z * cos
+    };
+}
 
 /**
  * Check if an entity is still valid and loaded.
@@ -351,10 +364,96 @@ function isMob(entity) {
 }
 
 // ============================================================================
-// ENTITY SPAWN HANDLER — The main dice roll
+// ENTITY SPAWN HANDLER — The main dice roll & projectile checks
 // ============================================================================
 world.afterEvents.entitySpawn.subscribe((event) => {
     const entity = event.entity;
+    if (!entity) return;
+
+    // --- Projectile multishot & quick charge logic ---
+    const isProj = entity.typeId.includes("arrow") ||
+        entity.typeId.includes("potion") ||
+        entity.typeId.includes("fireball") ||
+        entity.typeId.includes("wither_skull") ||
+        entity.typeId.includes("trident");
+
+    if (isProj) {
+        system.run(() => {
+            if (!isEntityValid(entity)) return;
+            const projComp = entity.getComponent("minecraft:projectile");
+            if (!projComp) return;
+
+            const owner = projComp.owner;
+            if (!owner || !isEntityValid(owner)) return;
+
+            // --- Multishot Ranged ---
+            const multishot = getEnchant(owner, "multishot");
+            if (multishot) {
+                const isShooterEligible = owner.typeId === "minecraft:witch" ||
+                    owner.typeId === "minecraft:ender_dragon" ||
+                    owner.typeId === "minecraft:wither" ||
+                    owner.typeId === "minecraft:skeleton" ||
+                    owner.typeId === "minecraft:stray" ||
+                    owner.typeId === "minecraft:bogged" ||
+                    owner.typeId === "minecraft:piglin" ||
+                    entity.typeId.includes("arrow");
+
+                if (isShooterEligible) {
+                    const vel = entity.getVelocity();
+                    const speed = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+                    if (speed > 0.05) {
+                        const angle = 0.174; // ~10 degrees
+                        const velLeft = rotateY(vel, -angle);
+                        const velRight = rotateY(vel, angle);
+                        const loc = entity.location;
+                        const dim = entity.dimension;
+                        const typeId = entity.typeId;
+
+                        try {
+                            const projLeft = dim.spawnEntity(typeId, loc);
+                            const projRight = dim.spawnEntity(typeId, loc);
+                            const compLeft = projLeft.getComponent("minecraft:projectile");
+                            const compRight = projRight.getComponent("minecraft:projectile");
+
+                            if (compLeft) {
+                                try { compLeft.owner = owner; } catch { }
+                                compLeft.shoot(velLeft);
+                            }
+                            if (compRight) {
+                                try { compRight.owner = owner; } catch { }
+                                compRight.shoot(velRight);
+                            }
+                        } catch { }
+                    }
+                }
+            }
+
+            // --- Quick Charge Ranged ---
+            const quickCharge = getEnchant(owner, "quick_charge");
+            if (quickCharge) {
+                const level = quickCharge.level;
+                const vel = entity.getVelocity();
+                const typeId = entity.typeId;
+                const dim = entity.dimension;
+
+                for (let j = 1; j <= level; j++) {
+                    const delay = (10 - level * 2) * j;
+                    system.runTimeout(() => {
+                        if (!isEntityValid(owner)) return;
+                        try {
+                            const extraProj = dim.spawnEntity(typeId, owner.location);
+                            const comp = extraProj.getComponent("minecraft:projectile");
+                            if (comp) {
+                                try { comp.owner = owner; } catch { }
+                                comp.shoot(vel);
+                            }
+                        } catch { }
+                    }, delay);
+                }
+            }
+        });
+        return;
+    }
 
     // Only process actual mobs
     if (!isMob(entity)) return;
@@ -460,6 +559,47 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
     for (const enchant of enchants) {
         try {
             switch (enchant.id) {
+                // --- MENDING: Heal on hit ---
+                case "mending": {
+                    const healthComp = attacker.getComponent("minecraft:health");
+                    if (healthComp) {
+                        const current = healthComp.currentValue;
+                        const max = healthComp.effectiveMax;
+                        const healAmount = enchant.level * 2;
+                        healthComp.setCurrentValue(Math.min(current + healAmount, max));
+                        try {
+                            attacker.dimension.spawnParticle("minecraft:heart_particle", attacker.location);
+                        } catch { }
+                    }
+                    break;
+                }
+
+                // --- QUICK CHARGE: Melee follow-up strike ---
+                case "quick_charge": {
+                    const level = enchant.level;
+                    const delay = 15 - level * 2;
+                    system.runTimeout(() => {
+                        if (!isEntityValid(attacker) || !isEntityValid(victim)) return;
+                        const locA = attacker.location;
+                        const locV = victim.location;
+                        const distSq = (locA.x - locV.x) ** 2 + (locA.y - locV.y) ** 2 + (locA.z - locV.z) ** 2;
+                        if (distSq < 16) {
+                            const strikeDamage = 2 + level;
+                            victim.applyDamage(strikeDamage, {
+                                cause: EntityDamageCause.entityAttack,
+                                damagingEntity: attacker
+                            });
+                            try {
+                                victim.dimension.spawnParticle("minecraft:crit_particle", victim.location);
+                                victim.dimension.runCommand(
+                                    `playsound random.hit @a ${victim.location.x.toFixed(1)} ${victim.location.y.toFixed(1)} ${victim.location.z.toFixed(1)}`
+                                );
+                            } catch { }
+                        }
+                    }, delay);
+                    break;
+                }
+
                 // --- SHARPNESS: Extra flat damage ---
                 case "sharpness": {
                     // Vanilla: 0.5 + 0.5 * level extra damage
@@ -512,7 +652,7 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
                         const dx = victim.location.x - attacker.location.x;
                         const dz = victim.location.z - attacker.location.z;
                         const dist = Math.sqrt(dx * dx + dz * dz) || 1;
-                        const power = 0.4 * enchant.level;
+                        const power = 0.67 * enchant.level;
                         victim.applyKnockback(dx / dist, dz / dist, power, 0.3 * enchant.level);
                     } catch {
                         // applyKnockback may not be available on all entities
@@ -582,11 +722,49 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
 // ============================================================================
 // DEFENSIVE ENCHANTMENT EFFECTS — Applied when an enchanted mob takes damage
 // ============================================================================
+const activeMultishots = new Set();
+
 world.afterEvents.entityHurt.subscribe((event) => {
     const victim = event.hurtEntity;
     const attacker = event.damageSource?.damagingEntity;
+    const damage = event.damage;
 
     if (!isEntityValid(victim)) return;
+
+    // --- Multishot Melee critical strike (10% chance for 3x damage) ---
+    if (attacker && isEntityValid(attacker) && isMob(attacker) && !activeMultishots.has(victim.id)) {
+        const multishot = getEnchant(attacker, "multishot");
+        if (multishot) {
+            const isShooterEligible = attacker.typeId === "minecraft:witch" ||
+                attacker.typeId === "minecraft:ender_dragon" ||
+                attacker.typeId === "minecraft:wither" ||
+                attacker.typeId === "minecraft:skeleton" ||
+                attacker.typeId === "minecraft:stray" ||
+                attacker.typeId === "minecraft:bogged" ||
+                attacker.typeId === "minecraft:piglin";
+
+            if (!isShooterEligible && Math.random() < 0.10) {
+                activeMultishots.add(victim.id);
+                try {
+                    const extraDamage = damage * 2;
+                    victim.applyDamage(extraDamage, {
+                        cause: EntityDamageCause.entityAttack,
+                        damagingEntity: attacker
+                    });
+
+                    const loc = victim.location;
+                    try {
+                        victim.dimension.spawnParticle("minecraft:crit_particle", loc);
+                        victim.dimension.runCommand(
+                            `playsound random.crit @a ${loc.x.toFixed(1)} ${loc.y.toFixed(1)} ${loc.z.toFixed(1)}`
+                        );
+                    } catch { }
+                    world.sendMessage(`§d§l✦§r §cCritical Multishot! §7An enchanted mob dealt §e3x damage§7!`);
+                } catch { }
+                activeMultishots.delete(victim.id);
+            }
+        }
+    }
 
     const enchants = getEnchantments(victim);
     if (!enchants) return;
@@ -648,6 +826,11 @@ world.afterEvents.entityDie.subscribe((event) => {
     const damageSource = event.damageSource;
 
     if (!deadEntity) return;
+
+    // Clean up Infinity alerts map
+    try {
+        lastInfinityAlertMap.delete(deadEntity.id);
+    } catch { }
 
     // Read enchantments before the entity is fully gone
     let enchants;
@@ -720,7 +903,7 @@ world.afterEvents.entityDie.subscribe((event) => {
             while (amount > 0) {
                 const stackSize = Math.min(amount, 64);
                 amount -= stackSize;
-                
+
                 const ix = loc.x + (Math.random() - 0.5) * 0.8;
                 const iz = loc.z + (Math.random() - 0.5) * 0.8;
                 try {
@@ -728,7 +911,7 @@ world.afterEvents.entityDie.subscribe((event) => {
                     dim.spawnItem(itemStack, { x: ix, y: loc.y + 0.5, z: iz });
                 } catch {
                     // Fallback
-                    try { dim.runCommand(`give @p[r=24] ${itemId} ${stackSize}`); } catch {}
+                    try { dim.runCommand(`give @p[r=24] ${itemId} ${stackSize}`); } catch { }
                 }
             }
         }
@@ -836,12 +1019,528 @@ system.runInterval(() => {
 }, 40); // Every 40 ticks = 2 seconds
 
 // ============================================================================
+// BEFORE HURT EVENT — Used for damage prevention / immunity logic
+// ============================================================================
+const lastInfinityAlertMap = new Map();
+
+world.beforeEvents.entityHurt.subscribe((event) => {
+    const victim = event.hurtEntity;
+    if (!isMob(victim)) return;
+
+    // --- INFINITY: Complete invulnerability until broken by a potion ---
+    const infinityEnchant = getEnchant(victim, "infinity");
+    if (infinityEnchant) {
+        let isBroken = false;
+        try {
+            isBroken = victim.getDynamicProperty("mob_enchant:infinity_broken") === true;
+        } catch { }
+
+        if (!isBroken) {
+            event.cancel = true;
+
+            const now = Date.now();
+            const lastAlert = lastInfinityAlertMap.get(victim.id) || 0;
+            if (now - lastAlert > 2000) {
+                lastInfinityAlertMap.set(victim.id, now);
+                system.run(() => {
+                    if (!isEntityValid(victim)) return;
+                    const loc = victim.location;
+                    try {
+                        victim.dimension.spawnParticle("minecraft:guardian_attack_particle", loc);
+                        victim.dimension.runCommand(
+                            `playsound random.anvil_land @a ${loc.x.toFixed(1)} ${loc.y.toFixed(1)} ${loc.z.toFixed(1)} 0.5 2`
+                        );
+                    } catch { }
+
+                    const attacker = event.damageSource?.damagingEntity;
+                    if (attacker && attacker.typeId === "minecraft:player") {
+                        world.sendMessage("§d§l✦§r §eInfinity Shield§7 is active! Splashing any potion effect onto this mob will break it.");
+                    }
+                });
+            }
+            return;
+        }
+    }
+
+    // --- UNBREAKING: Revive on fatal damage (totem effect) ---
+    const unbreakingEnchant = getEnchant(victim, "unbreaking");
+    if (unbreakingEnchant) {
+        const healthComp = victim.getComponent("minecraft:health");
+        if (healthComp && event.damage >= healthComp.currentValue) {
+            const surviveChance = unbreakingEnchant.level * 0.10;
+            if (Math.random() < surviveChance) {
+                event.cancel = true;
+
+                system.run(() => {
+                    if (!isEntityValid(victim)) return;
+                    const hComp = victim.getComponent("minecraft:health");
+                    if (hComp) {
+                        hComp.resetToMaxValue();
+                    }
+
+                    const loc = victim.location;
+                    const dim = victim.dimension;
+                    try {
+                        dim.spawnParticle("minecraft:totem_particle", loc);
+                        dim.runCommand(
+                            `playsound random.totem @a ${loc.x.toFixed(1)} ${loc.y.toFixed(1)} ${loc.z.toFixed(1)}`
+                        );
+                    } catch { }
+                });
+            }
+        }
+    }
+});
+
+// ============================================================================
+// EFFECT ADDED EVENT — Breaking Infinity Shield
+// ============================================================================
+world.afterEvents.effectAdd.subscribe((event) => {
+    const entity = event.entity;
+    if (!isMob(entity)) return;
+
+    const infinity = getEnchant(entity, "infinity");
+    if (!infinity) return;
+
+    try {
+        const isBroken = entity.getDynamicProperty("mob_enchant:infinity_broken") === true;
+        if (!isBroken) {
+            entity.setDynamicProperty("mob_enchant:infinity_broken", true);
+            const loc = entity.location;
+            try {
+                entity.dimension.runCommand(
+                    `playsound random.break @a ${loc.x.toFixed(1)} ${loc.y.toFixed(1)} ${loc.z.toFixed(1)}`
+                );
+            } catch { }
+        }
+    } catch { }
+});
+
+// ============================================================================
+// FROST WALKER TICK RUNNER — Convert water underfoot to ice
+// ============================================================================
+system.runInterval(() => {
+    try {
+        for (const dimension of [
+            world.getDimension("overworld"),
+            world.getDimension("nether"),
+            world.getDimension("the_end"),
+        ]) {
+            try {
+                const entities = dimension.getEntities();
+                for (const entity of entities) {
+                    if (!isEntityValid(entity)) continue;
+                    if (entity.typeId === "minecraft:player") continue;
+
+                    const fw = getEnchant(entity, "frost_walker");
+                    if (!fw) continue;
+
+                    const loc = entity.location;
+                    const radius = fw.level + 1;
+                    const centerY = Math.floor(loc.y) - 1;
+                    const centerX = Math.floor(loc.x);
+                    const centerZ = Math.floor(loc.z);
+                    const dim = entity.dimension;
+
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        for (let dz = -radius; dz <= radius; dz++) {
+                            if (dx * dx + dz * dz > radius * radius) continue;
+                            try {
+                                const bx = centerX + dx;
+                                const bz = centerZ + dz;
+                                const block = dim.getBlock({ x: bx, y: centerY, z: bz });
+                                if (block && block.typeId === "minecraft:water") {
+                                    const blockAbove = dim.getBlock({ x: bx, y: centerY + 1, z: bz });
+                                    if (blockAbove && blockAbove.typeId === "minecraft:air") {
+                                        block.setPermutation(BlockPermutation.resolve("minecraft:frosted_ice"));
+                                    }
+                                }
+                            } catch { }
+                        }
+                    }
+                }
+            } catch { }
+        }
+    } catch { }
+}, 5);
+
+// ============================================================================
+// PLAYER COMMAND — /scriptevent mobenchant:<action> — Manually enchant mobs
+// ============================================================================
+// Usage (type these in Minecraft's / command bar):
+//   /scriptevent mobenchant:enchant                — Random enchantments on nearest mob
+//   /scriptevent mobenchant:enchant sharpness 5    — Add specific enchantment at level
+//   /scriptevent mobenchant:random 3               — Add N random enchantments (1-5)
+//   /scriptevent mobenchant:clear                  — Remove all enchantments from nearest mob
+//   /scriptevent mobenchant:list                   — Show all available enchantments
+//   /scriptevent mobenchant:info                   — Inspect nearest mob's enchantments
+//   /scriptevent mobenchant:help                   — Show command help
+// Maximum of 5 enchantments per mob.
+// ============================================================================
+
+const MAX_ENCHANTS = 5;
+const MOB_SEARCH_RADIUS = 5; // blocks
+
+/**
+ * Find the nearest mob to a player within a given radius.
+ * Excludes players and non-mob entities.
+ */
+function findNearestMob(player, radius) {
+    try {
+        const entities = player.dimension.getEntities({
+            location: player.location,
+            maxDistance: radius,
+            excludeTypes: ["minecraft:player"],
+        });
+
+        let nearest = null;
+        let nearestDistSq = Infinity;
+
+        for (const entity of entities) {
+            if (!isEntityValid(entity)) continue;
+            if (!isMob(entity)) continue;
+
+            const dx = entity.location.x - player.location.x;
+            const dy = entity.location.y - player.location.y;
+            const dz = entity.location.z - player.location.z;
+            const distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq < nearestDistSq) {
+                nearestDistSq = distSq;
+                nearest = entity;
+            }
+        }
+
+        return nearest;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Look up an enchantment definition from the pool by ID.
+ * Supports partial matching (e.g. "sharp" matches "sharpness").
+ */
+function findEnchantDef(query) {
+    const lower = query.toLowerCase().replace(/\s+/g, "_");
+
+    // Exact match first
+    const exact = ENCHANTMENT_POOL.find(e => e.id === lower);
+    if (exact) return exact;
+
+    // Partial / prefix match
+    const partial = ENCHANTMENT_POOL.find(e => e.id.startsWith(lower));
+    if (partial) return partial;
+
+    // Contains match
+    const contains = ENCHANTMENT_POOL.find(e => e.id.includes(lower));
+    return contains || null;
+}
+
+/**
+ * Apply enchantments to a mob and update its nameplate + passive boosts.
+ */
+function applyEnchantmentsToMob(entity, enchantList) {
+    try {
+        entity.setDynamicProperty(ENCHANT_PROPERTY, JSON.stringify(enchantList));
+        setEnchantedNameplate(entity, enchantList);
+        applyPassiveBoosts(entity, enchantList);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Send a styled message to a specific player.
+ */
+function tellPlayer(player, msg) {
+    try {
+        player.sendMessage(msg);
+    } catch {
+        // Fallback: use world message (visible to all)
+        try { world.sendMessage(msg); } catch {}
+    }
+}
+
+// --- /scriptevent Command Handler ---
+system.afterEvents.scriptEventReceive.subscribe((event) => {
+    // Only handle events in our namespace
+    if (!event.id.startsWith("mobenchant:")) return;
+
+    // Only handle commands from players
+    const player = event.sourceEntity;
+    if (!player || player.typeId !== "minecraft:player") return;
+
+    const action = event.id.replace("mobenchant:", "");
+    const message = event.message?.trim() || "";
+    const args = message.split(/\s+/).filter(a => a.length > 0);
+
+    // --- HELP ---
+    if (action === "help") {
+        tellPlayer(player, `§d§l✦ Mob Enchant Commands §r`);
+        tellPlayer(player, `§e/scriptevent mobenchant:enchant§7 — Random enchants on nearest mob`);
+        tellPlayer(player, `§e/scriptevent mobenchant:enchant <name> [level]§7 — Add specific`);
+        tellPlayer(player, `§e/scriptevent mobenchant:random [count]§7 — Add N random (1-5)`);
+        tellPlayer(player, `§e/scriptevent mobenchant:clear§7 — Remove all enchantments`);
+        tellPlayer(player, `§e/scriptevent mobenchant:list§7 — Show all enchantment names`);
+        tellPlayer(player, `§e/scriptevent mobenchant:info§7 — Inspect nearest mob`);
+        tellPlayer(player, `§e/scriptevent mobenchant:help§7 — Show this help`);
+        tellPlayer(player, `§8Max §f${MAX_ENCHANTS}§8 enchantments per mob. Range: §f${MOB_SEARCH_RADIUS}§8 blocks.`);
+        return;
+    }
+
+    // --- LIST ---
+    if (action === "list") {
+        tellPlayer(player, `§d§l✦ Available Enchantments §r`);
+
+        const categories = { offensive: [], defensive: [], passive: [], flavor: [] };
+        for (const e of ENCHANTMENT_POOL) {
+            categories[e.category].push(e);
+        }
+
+        const catColors = { offensive: "§c", defensive: "§b", passive: "§a", flavor: "§e" };
+        const catNames = { offensive: "Offensive", defensive: "Defensive", passive: "Movement", flavor: "Utility" };
+
+        for (const cat of ["offensive", "defensive", "passive", "flavor"]) {
+            const entries = categories[cat];
+            if (entries.length === 0) continue;
+            const names = entries.map(e => `${prettyName(e.id)} (${e.maxLevel})`).join("§7, " + catColors[cat]);
+            tellPlayer(player, `${catColors[cat]}§l${catNames[cat]}:§r ${catColors[cat]}${names}`);
+        }
+        return;
+    }
+
+    // --- Commands that require a target mob ---
+    const target = findNearestMob(player, MOB_SEARCH_RADIUS);
+    if (!target) {
+        tellPlayer(player, `§d§l✦§r §cNo mob found within ${MOB_SEARCH_RADIUS} blocks! Get closer to a mob.`);
+        return;
+    }
+
+    const mobTypeName = prettyName(target.typeId.replace("minecraft:", ""));
+
+    // --- INFO ---
+    if (action === "info") {
+        const enchants = getEnchantments(target);
+        if (!enchants || enchants.length === 0) {
+            tellPlayer(player, `§d§l✦§r §7The §f${mobTypeName}§7 has no enchantments.`);
+        } else {
+            tellPlayer(player, `§d§l✦ ${mobTypeName} — Enchantments (${enchants.length}/${MAX_ENCHANTS}) §r`);
+            for (const e of enchants) {
+                const lvlStr = e.maxLevel > 1 ? " " + toRoman(e.level) : "";
+                let color = "§7";
+                if (e.category === "offensive") color = "§c";
+                else if (e.category === "defensive") color = "§b";
+                else if (e.category === "passive") color = "§a";
+                else if (e.category === "flavor") color = "§e";
+                tellPlayer(player, `  ${color}• ${prettyName(e.id)}${lvlStr}§r`);
+            }
+            tellPlayer(player, `§8Power Score: §f${calculatePowerScore(enchants)}`);
+        }
+        return;
+    }
+
+    // --- CLEAR ---
+    if (action === "clear") {
+        const enchants = getEnchantments(target);
+        if (!enchants || enchants.length === 0) {
+            tellPlayer(player, `§d§l✦§r §7The §f${mobTypeName}§7 has no enchantments to remove.`);
+            return;
+        }
+        try {
+            target.setDynamicProperty(ENCHANT_PROPERTY, undefined);
+            target.nameTag = "";
+            // Remove passive effects
+            try {
+                target.removeEffect("fire_resistance");
+                target.removeEffect("water_breathing");
+                target.removeEffect("speed");
+                target.removeEffect("resistance");
+                target.removeEffect("slow_falling");
+            } catch {}
+            tellPlayer(player, `§d§l✦§r §aCleared all enchantments from §f${mobTypeName}§a!`);
+        } catch {
+            tellPlayer(player, `§d§l✦§r §cFailed to clear enchantments.`);
+        }
+        return;
+    }
+
+    // --- RANDOM [count] ---
+    if (action === "random") {
+        let count = 0;
+        if (args.length > 0) {
+            count = parseInt(args[0]);
+            if (isNaN(count) || count < 1) count = 1;
+            if (count > MAX_ENCHANTS) count = MAX_ENCHANTS;
+        }
+
+        // Check existing enchantments
+        const existing = getEnchantments(target) || [];
+        const slotsLeft = MAX_ENCHANTS - existing.length;
+
+        if (slotsLeft <= 0) {
+            tellPlayer(player, `§d§l✦§r §cThe §f${mobTypeName}§c already has ${MAX_ENCHANTS}/${MAX_ENCHANTS} enchantments! Use §e/scriptevent mobenchant:clear§c first.`);
+            return;
+        }
+
+        // Determine how many to add
+        if (count === 0) {
+            count = Math.min(rollEnchantCount(), slotsLeft);
+        } else {
+            count = Math.min(count, slotsLeft);
+        }
+
+        // Filter out enchantments the mob already has
+        const existingIds = new Set(existing.map(e => e.id));
+        const available = ENCHANTMENT_POOL.filter(e => !existingIds.has(e.id));
+
+        if (available.length === 0) {
+            tellPlayer(player, `§d§l✦§r §cNo more unique enchantments available for this mob!`);
+            return;
+        }
+
+        count = Math.min(count, available.length);
+        const shuffled = shuffle([...available]);
+        const newEnchants = shuffled.slice(0, count).map(e => ({
+            id: e.id,
+            level: rollLevel(e.maxLevel),
+            maxLevel: e.maxLevel,
+            category: e.category,
+        }));
+
+        const combined = [...existing, ...newEnchants];
+
+        if (applyEnchantmentsToMob(target, combined)) {
+            const added = newEnchants.map(e => {
+                const lvl = e.maxLevel > 1 ? " " + toRoman(e.level) : "";
+                return `§e${prettyName(e.id)}${lvl}§r`;
+            }).join("§7, ");
+            tellPlayer(player, `§d§l✦§r §aEnchanted §f${mobTypeName}§a with: ${added}`);
+            tellPlayer(player, `§8Total: §f${combined.length}/${MAX_ENCHANTS}§8 enchantments`);
+        } else {
+            tellPlayer(player, `§d§l✦§r §cFailed to enchant the mob.`);
+        }
+        return;
+    }
+
+    // --- ENCHANT [name] [level] ---
+    if (action === "enchant") {
+        // No arguments = random enchantment
+        if (args.length === 0) {
+            const existing = getEnchantments(target) || [];
+            const slotsLeft = MAX_ENCHANTS - existing.length;
+
+            if (slotsLeft <= 0) {
+                tellPlayer(player, `§d§l✦§r §cThe §f${mobTypeName}§c already has ${MAX_ENCHANTS}/${MAX_ENCHANTS} enchantments! Use §e/scriptevent mobenchant:clear§c first.`);
+                return;
+            }
+
+            const count = Math.min(rollEnchantCount(), slotsLeft);
+            const existingIds = new Set(existing.map(e => e.id));
+            const available = ENCHANTMENT_POOL.filter(e => !existingIds.has(e.id));
+
+            if (available.length === 0) {
+                tellPlayer(player, `§d§l✦§r §cNo more unique enchantments available for this mob!`);
+                return;
+            }
+
+            const actualCount = Math.min(count, available.length);
+            const shuffled = shuffle([...available]);
+            const newEnchants = shuffled.slice(0, actualCount).map(e => ({
+                id: e.id,
+                level: rollLevel(e.maxLevel),
+                maxLevel: e.maxLevel,
+                category: e.category,
+            }));
+
+            const combined = [...existing, ...newEnchants];
+
+            if (applyEnchantmentsToMob(target, combined)) {
+                const added = newEnchants.map(e => {
+                    const lvl = e.maxLevel > 1 ? " " + toRoman(e.level) : "";
+                    return `§e${prettyName(e.id)}${lvl}§r`;
+                }).join("§7, ");
+                tellPlayer(player, `§d§l✦§r §aEnchanted §f${mobTypeName}§a with: ${added}`);
+                tellPlayer(player, `§8Total: §f${combined.length}/${MAX_ENCHANTS}§8 enchantments`);
+            } else {
+                tellPlayer(player, `§d§l✦§r §cFailed to enchant the mob.`);
+            }
+            return;
+        }
+
+        // Specific enchantment: /scriptevent mobenchant:enchant sharpness 5
+        const enchantName = args[0].toLowerCase();
+        const enchantDef = findEnchantDef(enchantName);
+        if (!enchantDef) {
+            tellPlayer(player, `§d§l✦§r §cUnknown enchantment: §f${enchantName}`);
+            tellPlayer(player, `§7Use §e/scriptevent mobenchant:list§7 to see all available enchantments.`);
+            return;
+        }
+
+        // Parse optional level
+        let level = 0;
+        if (args.length > 1) {
+            level = parseInt(args[1]);
+            if (isNaN(level) || level < 1) level = 1;
+            if (level > enchantDef.maxLevel) level = enchantDef.maxLevel;
+        } else {
+            level = rollLevel(enchantDef.maxLevel);
+        }
+
+        // Check existing enchantments
+        const existing = getEnchantments(target) || [];
+        const existingIdx = existing.findIndex(e => e.id === enchantDef.id);
+
+        if (existingIdx !== -1) {
+            // Update existing enchantment level
+            existing[existingIdx].level = level;
+            if (applyEnchantmentsToMob(target, existing)) {
+                const lvlStr = enchantDef.maxLevel > 1 ? " " + toRoman(level) : "";
+                tellPlayer(player, `§d§l✦§r §aUpdated §f${mobTypeName}§a's §e${prettyName(enchantDef.id)}${lvlStr}§a!`);
+            } else {
+                tellPlayer(player, `§d§l✦§r §cFailed to update enchantment.`);
+            }
+            return;
+        }
+
+        // Adding new enchantment — check cap
+        if (existing.length >= MAX_ENCHANTS) {
+            tellPlayer(player, `§d§l✦§r §cThe §f${mobTypeName}§c already has ${MAX_ENCHANTS}/${MAX_ENCHANTS} enchantments!`);
+            tellPlayer(player, `§7Use §e/scriptevent mobenchant:clear§7 to remove them, or specify an existing enchant to update its level.`);
+            return;
+        }
+
+        const newEnchant = {
+            id: enchantDef.id,
+            level: level,
+            maxLevel: enchantDef.maxLevel,
+            category: enchantDef.category,
+        };
+
+        const combined = [...existing, newEnchant];
+
+        if (applyEnchantmentsToMob(target, combined)) {
+            const lvlStr = enchantDef.maxLevel > 1 ? " " + toRoman(level) : "";
+            tellPlayer(player, `§d§l✦§r §aAdded §e${prettyName(enchantDef.id)}${lvlStr}§a to §f${mobTypeName}§a!`);
+            tellPlayer(player, `§8Total: §f${combined.length}/${MAX_ENCHANTS}§8 enchantments`);
+        } else {
+            tellPlayer(player, `§d§l✦§r §cFailed to enchant the mob.`);
+        }
+        return;
+    }
+});
+
+// ============================================================================
 // STARTUP MESSAGE
 // ============================================================================
 system.runTimeout(() => {
     try {
         world.sendMessage("§d§l[Mob Enchant]§r §aAddon loaded! Mobs now have a 1/6 chance to spawn enchanted.");
+        world.sendMessage("§d§l[Mob Enchant]§r §7Type §e/scriptevent mobenchant:help§7 for manual enchanting commands.");
     } catch {
         // May fail if no players are online yet
     }
 }, 100);
+
+
