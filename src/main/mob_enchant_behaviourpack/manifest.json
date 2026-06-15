@@ -1,7 +1,7 @@
 {
   "format_version": 2,
   "header": {
-    "description": "",
+    "description": "Randomly enchants mobs on spawn with real gameplay effects",
     "name": "mob enchant",
     "uuid": "145bfb42-af53-36eb-b89b-fb8b4e842913",
     "version": [
@@ -25,6 +25,18 @@
         0,
         0
       ]
+    },
+    {
+      "description": "Mob enchantment script",
+      "type": "script",
+      "language": "javascript",
+      "uuid": "a3c1d7e2-4f89-4b6a-9e12-3d5f8a7c6b01",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
     }
   ],
   "dependencies": [
@@ -35,6 +47,10 @@
         0,
         0
       ]
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.6.0"
     }
   ],
   "metadata": {
